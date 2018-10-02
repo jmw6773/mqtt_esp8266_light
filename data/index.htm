@@ -1,0 +1,499 @@
+<!-- Source https://bootstrapious.com/p/bootstrap-sidebar -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <title>ESP RGB Lights</title>
+
+  <!-- Bootstrap CSS CDN -->
+  <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
+
+  <!-- Our Custom CSS -->
+  <link rel="stylesheet" type="text/css" href="/css/style.min.css">
+  
+  <!-- Scrollbar Custom CSS -->
+  <link rel="stylesheet" type="text/css" href="/css/jquery.mCSbar.min.css">
+
+
+
+
+  <!-- jQuery CDN -->
+  <script type="text/javascript" src="/js/jquery-1.12.0.min.js"></script>
+  
+  <!-- Bootstrap JS CDN -->
+  <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+
+  <!-- jQuery Custom Scroller CDN -->
+  <script type="text/javascript" src="/js/jquery.mCSbar.min.js"></script>
+
+  <!-- Javascript to connect to ESP websocket and update page -->
+  <script type="text/javascript" src="/js/pageUpdate.min.js"></script>
+</head>
+<body>
+  <div class="wrapper">
+    <!-- Sidebar Holder -->
+    <nav id="sidebar">
+    <div>
+      <div id="serverStatus">
+        <div class="server_disconnected"></div>
+      </div>
+                
+    <div id="dismiss">
+      <i class="glyphicon glyphicon-arrow-left"></i>
+    </div>
+  </div>
+
+              <div class="sidebar-header">
+                  <h3>Couch Lights</h3>
+              </div>
+
+              <ul class="list-unstyled components">
+                <li class="active">
+                  <a class="menuItem" page="#status_page" href="#"><i class="glyphicon glyphicon-home"></i>Status</a>
+                </li>
+                <li>
+                  <a class="menuItem" page="#trans_page" href="#"><i class="glyphicon glyphicon-random"></i>Transision Settings</a>
+                </li>
+                <li>
+                  <a href="#pageSubmenu" data-toggle="collapse" aria-expanded="true"><i class="glyphicon glyphicon-cog"></i>Config</a>
+                  <ul class="collapse list-unstyled in" aria-expanded="true" id="pageSubmenu">
+                    <li><a class="menuItem" page="#gen_page"  href="#"><i class="glyphicon glyphicon-list-alt"></i> General Settings</a></li>
+                    <li><a class="menuItem" page="#wifi_page" href="#"><i class="glyphicon glyphicon-signal"></i>WiFi</a></li>
+                    <li><a class="menuItem" page="#mqtt_page" href="#"><i class="glyphicon glyphicon-link"></i>MQTT</a></li>
+                    <li><a class="menuItem" page="#ntp_page" href="#"><i class="glyphicon glyphicon-hourglass"></i>NTP (Time) Settings</a></li>
+                  </ul>
+                </li>
+                <li>
+                  <a class="menuItem" page="#upd_page" href="#"><i class="glyphicon glyphicon-open"></i>Check for Updates</a>
+                </li>
+              </ul>
+
+			  <ul class="list-unstyled components">
+                <li>
+                  <a onclick="reloadConfig();"><i class="glyphicon glyphicon-trash"></i>Discard Changes<i id="discardResult"></i></a>
+                </li>
+				<li>
+                  <a onclick="commitConfigSaves();"><i class="glyphicon glyphicon-floppy-disk"></i>Commit All Changes<i id="commitResult"></i></a>
+                </li>
+              </ul>
+			  
+			  
+              <ul class="list-unstyled CTAs">
+                <li><a onclick="rebootDevice();" class="menuButton"><i id="rebootResult" class="glyphicon glyphicon-off"></i>Reboot Device</a></li>
+              </ul>
+            </nav>
+
+            <!-- Page Content Holder -->
+            <div id="content">
+                <nav class="navbar">
+                    <div class="container-fluid">
+
+                        <div class="navbar-header">
+                            <button type="button" id="sidebarCollapse" class="btn btn-info navbar-btn">
+                                <i class="glyphicon glyphicon-align-left"></i>
+                                <span>Toggle Sidebar</span>
+                            </button>
+                        </div>
+
+                        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                            <ul class="nav navbar-nav navbar-right">
+                                <li><a>Couch Lights Version: <span id="version">x</span></a></li>
+                                <li><a>SPIFFS Version: <span id="sversion">x</span></a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </nav>
+
+                <div id='status_page' class="cPage">
+                    <center><h1>Welcome</h1><p>Here you can find some information about your devices status.</p></center>
+                    <div class="col-md-8 col-md-offset-2">
+                        <div class="panel panel-default table-responsive">
+                            <table class="table table-hover table-striped table-condensed">
+                                <caption>Device</caption>
+                                <tbody>
+                                    <tr>
+                                        <th>Chip ID</th>
+                                        <td id="chip"></td>
+                                    </tr>
+                                    <tr>
+                                        <th>CPU Clock</th>
+                                        <td id="cpu"></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Uptime</th>
+                                        <td id="uptime"></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Free Heap</th>
+                                        <td>
+                                            <div class="progress" style="margin-bottom: 0 !important;">
+                                                <div id="heap" class="progress-bar progress-bar-warning" role="progressbar" style="width: 0%;"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Free Flash</th>
+                                        <td>
+                                            <div class="progress" style="margin-bottom: 0 !important;">
+                                                <div id="flash" class="progress-bar progress-bar-success" role="progressbar" style="width: 0%;"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Free SPIFFS</th>
+                                        <td>
+                                            <div class="progress" style="margin-bottom: 0 !important;">
+                                                <div id="spiffs" class="progress-bar progress-bar-success" role="progressbar" style="width: 0%;"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="panel panel-default table-responsive">
+                            <table class="table table-hover table-striped table-condensed">
+                                <caption>Operating State</caption>
+                                <tbody>
+                                    <tr>
+                                        <th>Status</th>
+                                        <td id="status"></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Current Transision</th>
+                                        <td id="effect"></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Temperature</th>
+                                        <td><span id="temp"></span> &#8451;</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="panel panel-default table-responsive">
+                            <table class="table table-hover table-striped table-condensed">
+                                <caption>Network</caption>
+                                <tbody>
+                                    <tr>
+                                        <th>SSID</th>
+                                        <td id="ssid"></td>
+                                    </tr>
+                                    <tr>
+                                        <th>IP</th>
+                                        <td id="ip"></td>
+                                    </tr>
+                                    <tr>
+                                        <th>MAC</th>
+                                        <td id="mac"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="trans_page" class="cPage" style="display: none;">
+                    <br>
+                    <br>
+                    <legend>Transision Settings</legend>
+                    <div class="row form-group">
+                        <label class="col-xs-3">Rainbow Speed</label>
+                        <span class="col-xs-9 col-md-5">
+                              <input type="range" min="1" max="100" value="30" class="slider" id="rainbowspeed" oninput="$('#rspeed').html($('#rainbowspeed').val() + 'ms');">
+                              <span id="rspeed">30ms</span>
+                        </span>
+                    </div>
+                    <div class="row form-group">
+                        <label class="col-xs-3">Fade Speed</label>
+                        <span class="col-xs-9 col-md-5">
+                              <input type="range" min="1" max="100" value="30" class="slider" id="fadespeed" oninput="$('#fspeed').html($('#fadespeed').val() + 'ms');">
+                              <span id="fspeed">30ms</span>
+                        </span>
+                    </div>
+					<div class="row form-group">
+                        <label class="col-xs-3">Random Fade Speed</label>
+                        <span class="col-xs-9 col-md-5">
+                              <input type="range" min="1" max="100" value="30" class="slider" id="rfadespeed" oninput="$('#rfspeed').html($('#rfadespeed').val() + 'ms');">
+                              <span id="rfspeed">30ms</span>
+                        </span>
+                    </div>
+                    <div class="row form-group">
+                        <label class="col-xs-3">Number of Flashes</label>
+                        <span class="col-xs-9 col-md-5">
+                              <input class="form-control input-sm" placeholder="3" max=99 min=1 id="numflashes" type="number">
+                              </span>
+                        <br>
+                    </div>
+					<div class="row form-group">
+                        <label class="col-xs-3">Flash Speed</label>
+                        <span class="col-xs-9 col-md-5">
+                              <input type="range" min="1" max="100" value="30" class="slider" id="flashspeed" oninput="$('#flspeed').html($('#flashspeed').val() + 'ms');">
+                              <span id="flspeed">30ms</span>
+                        </span>
+                    </div>
+                    <div class="row form-group">
+                        <div class="col-xs-9 col-md-8">
+                            <i id="transitionsSpinner"></i><button onclick="saveTransitions()" class="btn btn-primary btn-sm pull-right">Save</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="gen_page" class="cPage" style="display: none;">
+                    <legend>General Settings</legend>
+                    <div class="row form-group">
+                        <label class="col-xs-3">Host Name</label>
+                        <span class="col-xs-9 col-md-5">
+                          <input class="form-control input-sm" placeholder="Hostname" id="hostname" type="text">
+                        </span>
+                        <br>
+                    </div>
+                    <div class="row form-group">
+                        <label class="col-xs-3">Auto Restart</label>
+                        <span class="col-xs-9 col-md-5">
+                          <select class="form-control input-sm" id="autorestart" name="autorestart">
+                            <option value="0">Never</option>
+                            <option value="86400">Every 24h</option>
+                            <option value="604800" selected="">Every 7 days</option>
+                            <option value="1209600">Every 14 days</option>
+                            <option value="2592000">Every 30 days</option>
+                          </select>
+                        </span>
+                        <br><br>
+                        <div class="col-xs-9 col-md-8">
+                            <i id="generalSpinner"></i><button onclick="saveGeneral()" class="btn btn-primary btn-sm pull-right">Save</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="wifi_page" class="cPage" style="display: none;">
+                    <legend>Wi-Fi Settings</legend>
+                    <div class="row form-group">
+                        <label class="col-xs-3">Wi-Fi Mode</label>
+                        <div class="col-xs-9">
+                            <form>
+                                <label class="radio-inline"><input type="radio" name="wmode" value="wmodesta" id="wmodesta">Client Mode</label>
+                                <label class="radio-inline"><input type="radio" name="wmode" value="wmodeap" id="wmodeap">Access Point</label>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <label class="col-xs-3">SSID</label>
+                        <span class="col-xs-9 col-md-5">
+                                <input class="form-control input-sm" id="wifiSSID" name="ap_ssid" type="text">
+                              </span>
+                    </div>
+                    <div class="row form-group">
+                        <label class="col-xs-3">Password</label>
+                        <span class="col-xs-9 col-md-5">
+                              <input id="wifipass" class="form-control input-sm" name="wifiPass" type="text">
+                              </span>
+                    </div>
+                    <br>
+                    <div class="row form-group">
+                        <div class="col-xs-9 col-md-8">
+                            <i id="networkSpinner"></i><button onclick="saveNetwork()" class="btn btn-primary btn-sm pull-right">Save</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="mqtt_page" class="cPage" style="display: none;">
+                    <legend>MQTT Settings</legend>
+                    <div class="row form-group">
+                      <label class="col-xs-3">Client ID</label>
+                      <span class="col-xs-9 col-md-5">
+                        <input class="form-control input-sm" placeholder="Client ID" id="mqttcid" type="text">
+                      </span>
+                      <br>
+                    </div>
+                    <div class="row form-group">
+                      <label class="col-xs-3">Hostname</label>
+                      <span class="col-xs-9 col-md-5">
+                        <input class="form-control input-sm" placeholder="MQTT Host" id="mqtthost" type="text">
+                      </span>
+                      <br>
+                    </div>
+                    <div class="row form-group">
+                      <label class="col-xs-3">Port</label>
+                      <span class="col-xs-9 col-md-5">
+                        <input class="form-control input-sm" placeholder="1883" value="" id="mqttport" type="text">
+                      </span>
+                      <br>
+                    </div>
+                    <div class="row form-group">
+                      <label class="col-xs-3">User</label>
+                      <span class="col-xs-9 col-md-5">
+                        <input class="form-control input-sm" placeholder="" id="mqttuser" type="text">
+                      </span>
+                      <br>
+                    </div>
+                    <div class="row form-group">
+                      <label class="col-xs-3">Password</label>
+                      <span class="col-xs-9 col-md-5">
+                        <input class="form-control input-sm" placeholder="" id="mqttpwd" type="text">
+                      </span>
+                      <br>
+                      <br>
+                      <br>
+                    </div>
+                    <div class="row form-group">
+                        <label class="col-xs-3">State Topic</label>
+                        <span class="col-xs-9 col-md-5">
+                          <input class="form-control input-sm" placeholder="State MQTT topic" id="mqttstate" type="text">
+                        </span>
+                        <br>
+                    </div>
+                    <div class="row form-group">
+                      <label class="col-xs-3">Set Topic</label>
+                      <span class="col-xs-9 col-md-5">
+                        <input class="form-control input-sm" placeholder="Set MQTT topic" id="mqttset" type="text">
+                      </span>
+                      <br>
+                    </div>
+                    <div class="row form-group">
+                      <label class="col-xs-3">Temp Topic</label>
+                      <span class="col-xs-9 col-md-5">
+                        <input class="form-control input-sm" placeholder="Temperature MQTT Topic" id="mqtttemp" type="text">
+                      </span>
+				      <br>
+                    </div>
+                    <div class="row form-group">
+                        <label class="col-xs-3">Will Topic</label>
+                        <span class="col-xs-9 col-md-5">
+                    <input class="form-control input-sm" placeholder="Will Message MQTT Topic" id="mqttwill" type="text">
+                  </span>
+                        <br>
+                        <br>
+                        <div class="col-xs-9 col-md-8">
+                            <i id="mqttSpinner"></i><button onclick="saveMQTT()" class="btn btn-primary btn-sm pull-right">Save</button>
+                        </div>
+                    </div>
+                    <br>
+                    <br>
+                </div>
+
+                <div id="ntp_page" class="cPage" style="display: none;">
+                    <legend>Time Settings</legend>
+                    <div class="row form-group">
+                        <label class="col-xs-3">Device Time</label>
+                        <span id="utc" class="col-xs-9 col-md-5"></span>
+                    </div>
+                    <div class="row form-group">
+                        <label class="col-xs-3">Browser Time</label>
+                        <span id="rtc" class="col-xs-9 col-md-5"></span>
+                    </div>
+					<br><br>
+                    <div class="row form-group">
+                        <label class="col-xs-3">NTP Server</label>
+                        <span class="col-xs-9 col-md-5">
+                              <input class="form-control input-sm" placeholder="eg. pool.ntp.org" value="pool.ntp.org" id="ntpserver" type="text">
+                              </span>
+                        <br>
+                    </div>
+                    <div class="row form-group">
+                        <label class="col-xs-3">Polling Intervals (min)</label>
+                        <span class="col-xs-9 col-md-5">
+                          <input class="form-control input-sm" value="30" id="ntpupdate" type="text">
+                        </span>
+                        <br>
+                    </div>
+                    <div class="row form-group">
+                        <label class="col-xs-3">Time Zone</label>
+                        <span class="col-xs-9 col-md-5">
+                                <select class="form-control input-sm" name="timezone" id="timezone">
+                                  <option value="-12">(GMT -12:00) Eniwetok, Kwajalein</option>
+                                  <option value="-11">(GMT -11:00) Midway Island, Samoa</option>
+                                  <option value="-10">(GMT -10:00) Hawaii</option>
+                                  <option value="-9">(GMT -9:00) Alaska</option>
+                                  <option value="-8">(GMT -8:00) Pacific Time (US &amp; Canada)</option>
+                                  <option value="-7">(GMT -7:00) Mountain Time (US &amp; Canada)</option>
+                                  <option value="-6">(GMT -6:00) Central Time (US &amp; Canada), Mexico City</option>
+                                  <option value="-5">(GMT -5:00) Eastern Time (US &amp; Canada), Bogota, Lima</option>
+                                  <option value="-4">(GMT -4:00) Atlantic Time (Canada), Caracas, La Paz</option>
+                                  <option value="-3.5">(GMT -3:30) Newfoundland</option>
+                                  <option value="-3">(GMT -3:00) Brazil, Buenos Aires, Georgetown</option>
+                                  <option value="-2">(GMT -2:00) Mid-Atlantic</option>
+                                  <option value="-1">(GMT -1:00 hour) Azores, Cape Verde Islands</option>
+                                  <option value="0">(GMT) Western Europe Time, London, Lisbon, Casablanca</option>
+                                  <option value="1">(GMT +1:00 hour) Brussels, Copenhagen, Madrid, Paris</option>
+                                  <option value="2">(GMT +2:00) Kaliningrad, South Africa</option>
+                                  <option value="3">(GMT +3:00) Baghdad, Riyadh, Moscow, St. Petersburg</option>
+                                  <option value="3.5">(GMT +3:30) Tehran</option>
+                                  <option value="4">(GMT +4:00) Abu Dhabi, Muscat, Baku, Tbilisi</option>
+                                  <option value="4.5">(GMT +4:30) Kabul</option>
+                                  <option value="5">(GMT +5:00) Ekaterinburg, Islamabad, Karachi, Tashkent</option>
+                                  <option value="5.5">(GMT +5:30) Bombay, Calcutta, Madras, New Delhi</option>
+                                  <option value="5.75">(GMT +5:45) Kathmandu</option>
+                                  <option value="6">(GMT +6:00) Almaty, Dhaka, Colombo</option>
+                                  <option value="7">(GMT +7:00) Bangkok, Hanoi, Jakarta</option>
+                                  <option value="8">(GMT +8:00) Beijing, Perth, Singapore, Hong Kong</option>
+                                  <option selected="selected" value="9">(GMT +9:00) Tokyo, Seoul, Osaka, Sapporo, Yakutsk</option>
+                                  <option value="9.5">(GMT +9:30) Adelaide, Darwin</option>
+                                  <option value="10">(GMT +10:00) Eastern Australia, Guam, Vladivostok</option>
+                                  <option value="11">(GMT +11:00) Magadan, Solomon Islands, New Caledonia</option>
+                                  <option value="12">(GMT +12:00) Auckland, Wellington, Fiji, Kamchatka</option>
+                                </select>
+                              </span>
+                        <br>
+                        <br>
+                        <div class="col-xs-9 col-md-8">
+                            <i id="ntpSpinner"></i><button onclick="saveNTP()" class="btn btn-primary btn-sm pull-right">Save</button>
+                        </div>
+                        <br>
+                        <br>
+                        <br>
+                    </div>
+                    <br>
+                    <br>
+                </div>
+				
+                <div id="upd_page" class="cPage" style="display: none;">
+                    <legend style="display:block; width:100%;font-size:21px;margin-top:50px;">Update Settings</legend>
+                    <div class="row form-group">
+                        <label class="col-xs-3">Update URL</label>
+                        <span class="col-xs-9 col-md-5">
+                          <input class="form-control input-sm" placeholder="http://server:8080/ota/esp8266-v1.php"id="updateURL" type="text">
+                        </span>
+                    </div>
+                    <div class="row form-group"> 
+                        <label class="col-xs-3">Update Interval</label>
+                        <span class="col-xs-9 col-md-5">
+                          <select class="form-control input-sm" id="updateinterval" name="autoupdate">
+                            <option value="0">Never</option>
+                            <option value="3600">Every Hour</option>
+                            <option value="86400">Every 24h</option>
+                            <option value="604800">Every 7 days</option>
+                            <option value="1209600" selected="">Every 14 days</option>
+                            <option value="2592000">Every 30 days</option>
+                          </select>
+                        </span>
+                        <br><br>
+                        <div class="col-xs-9 col-md-8">
+                            <i id="generalSpinner"></i><button onclick="saveUpdate()" class="btn btn-primary btn-sm pull-right">Save</button>
+                        </div>
+                    </div>
+                    <legend>Update Now</legend>
+                    <div class="row form-group" style="margin-bottom:40px">
+                        <label class="col-xs-3">Check for Updates</label>
+                        <span class="col-xs-9 col-md-5">
+                          <button class="btn btn-primary btn-sm" onclick="updateDevice();"><i class="glyphicon glyphicon-open"></i>Check Now</button><i id="updateResult"></i>
+                        </span>
+                    </div>
+                    <div class="row form-group">
+                        <label class="col-xs-3">Upload Firmware</label>
+                        <span class="col-xs-9 col-md-5">
+                          <form method="POST" action="" enctype="multipart/form-data" id="upload_form">
+                             <input type="file" name="update" class="btn btn-primary btn-sm">
+							 <button class="btn btn-primary btn-sm">Upload</button>
+							 <span id="updPrg" style="display:inline-block; margin: 15px; width:40px;"></span>
+							 <i id="updateSpin"></i>
+							 <div id="updMsg"></div>
+						  </form>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
