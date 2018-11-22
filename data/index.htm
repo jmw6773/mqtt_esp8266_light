@@ -245,7 +245,7 @@
                     <div class="row form-group">
                         <label class="col-xs-3">Host Name</label>
                         <span class="col-xs-9 col-md-5">
-                          <input class="form-control input-sm" placeholder="Hostname" id="hostname" type="text">
+                          <input class="form-control input-sm" placeholder="Hostname" id="hostname" type="text" maxlength="31">
                         </span>
                         <br>
                     </div>
@@ -281,13 +281,13 @@
                     <div class="row form-group">
                         <label class="col-xs-3">SSID</label>
                         <span class="col-xs-9 col-md-5">
-                                <input class="form-control input-sm" id="wifiSSID" name="ap_ssid" type="text">
+                                <input class="form-control input-sm" id="wifiSSID" name="ap_ssid" type="text" maxlength="31">
                               </span>
                     </div>
                     <div class="row form-group">
                         <label class="col-xs-3">Password</label>
                         <span class="col-xs-9 col-md-5">
-                              <input id="wifipass" class="form-control input-sm" name="wifiPass" type="text">
+                              <input id="wifipass" class="form-control input-sm" name="wifiPass" type="text" maxlength="31">
                               </span>
                     </div>
                     <br>
@@ -303,35 +303,42 @@
                     <div class="row form-group">
                       <label class="col-xs-3">Client ID</label>
                       <span class="col-xs-9 col-md-5">
-                        <input class="form-control input-sm" placeholder="Client ID" id="mqttcid" type="text">
+                        <input class="form-control input-sm" placeholder="Client ID" id="mqttcid" maxlength="15" type="text">
                       </span>
                       <br>
                     </div>
                     <div class="row form-group">
                       <label class="col-xs-3">Hostname</label>
                       <span class="col-xs-9 col-md-5">
-                        <input class="form-control input-sm" placeholder="MQTT Host" id="mqtthost" type="text">
+                        <input class="form-control input-sm" placeholder="MQTT Host" id="mqtthost" type="text" maxlength="31">
                       </span>
                       <br>
                     </div>
                     <div class="row form-group">
                       <label class="col-xs-3">Port</label>
                       <span class="col-xs-9 col-md-5">
-                        <input class="form-control input-sm" placeholder="1883" value="" id="mqttport" type="text">
+                        <input class="form-control input-sm" placeholder="1883" value="" id="mqttport" type="number" min=1 max=65535>
                       </span>
                       <br>
                     </div>
                     <div class="row form-group">
-                      <label class="col-xs-3">User</label>
+                      <label class="col-xs-3">Username</label>
                       <span class="col-xs-9 col-md-5">
-                        <input class="form-control input-sm" placeholder="" id="mqttuser" type="text">
+                        <input class="form-control input-sm" placeholder="" id="mqttuser" type="text" maxlength="31">
                       </span>
                       <br>
                     </div>
                     <div class="row form-group">
                       <label class="col-xs-3">Password</label>
                       <span class="col-xs-9 col-md-5">
-                        <input class="form-control input-sm" placeholder="" id="mqttpwd" type="text">
+                        <input class="form-control input-sm" placeholder="" id="mqttpwd" type="text" maxlength="31">
+                      </span>
+                      <br>
+                    </div>
+                    <div class="row form-group">
+                      <label class="col-xs-3">Enable Authentication</label>
+                      <span class="col-xs-9 col-md-5">
+                        <input class="form-control input-sm" type="checkbox" name="mqttauth" id="mqttauth">
                       </span>
                       <br>
                       <br>
@@ -340,28 +347,28 @@
                     <div class="row form-group">
                         <label class="col-xs-3">State Topic</label>
                         <span class="col-xs-9 col-md-5">
-                          <input class="form-control input-sm" placeholder="State MQTT topic" id="mqttstate" type="text">
+                          <input class="form-control input-sm" placeholder="State MQTT topic" id="mqttstate" type="text" maxlength="47">
                         </span>
                         <br>
                     </div>
                     <div class="row form-group">
                       <label class="col-xs-3">Set Topic</label>
                       <span class="col-xs-9 col-md-5">
-                        <input class="form-control input-sm" placeholder="Set MQTT topic" id="mqttset" type="text">
+                        <input class="form-control input-sm" placeholder="Set MQTT topic" id="mqttset" type="text" maxlength="47">
                       </span>
                       <br>
                     </div>
                     <div class="row form-group">
                       <label class="col-xs-3">Temp Topic</label>
                       <span class="col-xs-9 col-md-5">
-                        <input class="form-control input-sm" placeholder="Temperature MQTT Topic" id="mqtttemp" type="text">
+                        <input class="form-control input-sm" placeholder="Temperature MQTT Topic" id="mqtttemp" type="text" maxlength="47">
                       </span>
 				      <br>
                     </div>
                     <div class="row form-group">
                         <label class="col-xs-3">Will Topic</label>
                         <span class="col-xs-9 col-md-5">
-                    <input class="form-control input-sm" placeholder="Will Message MQTT Topic" id="mqttwill" type="text">
+                    <input class="form-control input-sm" placeholder="Will Message MQTT Topic" id="mqttwill" type="text" maxlength="47">
                   </span>
                         <br>
                         <br>
@@ -387,15 +394,8 @@
                     <div class="row form-group">
                         <label class="col-xs-3">NTP Server</label>
                         <span class="col-xs-9 col-md-5">
-                              <input class="form-control input-sm" placeholder="eg. pool.ntp.org" value="pool.ntp.org" id="ntpserver" type="text">
+                              <input class="form-control input-sm" placeholder="eg. pool.ntp.org" value="pool.ntp.org" id="ntpserver" type="text" maxlength="31">
                               </span>
-                        <br>
-                    </div>
-                    <div class="row form-group">
-                        <label class="col-xs-3">Polling Intervals (min)</label>
-                        <span class="col-xs-9 col-md-5">
-                          <input class="form-control input-sm" value="30" id="ntpupdate" type="text">
-                        </span>
                         <br>
                     </div>
                     <div class="row form-group">
@@ -438,7 +438,7 @@
                         <br>
                         <br>
                         <div class="col-xs-9 col-md-8">
-                            <i id="ntpSpinner"></i><button onclick="saveNTP()" class="btn btn-primary btn-sm pull-right">Save</button>
+                            <button onclick="saveNTP()" class="btn btn-primary btn-sm pull-right">Save</button><i id="ntpSpinner"></i>
                         </div>
                         <br>
                         <br>
@@ -453,7 +453,7 @@
                     <div class="row form-group">
                         <label class="col-xs-3">Update URL</label>
                         <span class="col-xs-9 col-md-5">
-                          <input class="form-control input-sm" placeholder="http://server:8080/ota/esp8266-v1.php"id="updateURL" type="text">
+                          <input class="form-control input-sm" placeholder="http://server:8080/ota/esp8266-v1.php"id="updateURL" type="text" maxlength="63">
                         </span>
                     </div>
                     <div class="row form-group"> 
@@ -470,7 +470,7 @@
                         </span>
                         <br><br>
                         <div class="col-xs-9 col-md-8">
-                            <i id="generalSpinner"></i><button onclick="saveUpdate()" class="btn btn-primary btn-sm pull-right">Save</button>
+                            <button onclick="saveUpdate()" class="btn btn-primary btn-sm pull-right">Save</button><i id="otaSpinner"></i>
                         </div>
                     </div>
                     <legend>Update Now</legend>

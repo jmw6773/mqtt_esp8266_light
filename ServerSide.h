@@ -53,7 +53,18 @@ void ICACHE_FLASH_ATTR handleNotFound();
   void ICACHE_FLASH_ATTR webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t payload_length);
   void ICACHE_FLASH_ATTR startWebSocket();
 #endif
+
 void sendStatusUpdate();
+void sendDeviceInformation();
+
+void send_Device_Information();
+void send_General_Information();
+void send_OTA_Information();
+void send_Network_Information();
+void send_MQTT_Information();
+void send_NTP_Information();
+void send_Transitions_Information();
+
 
 bool ICACHE_FLASH_ATTR checkForUpdates();
 void ICACHE_FLASH_ATTR restartESP();

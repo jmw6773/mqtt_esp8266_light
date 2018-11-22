@@ -34,6 +34,8 @@ bool lastState;
   byte sendTempStatusToMQTT = 0;
 #endif
 
+SETTINGS settings;
+
 transitions current_transition = OFF;
 transitions previous_transition = OFF;
 
@@ -92,37 +94,6 @@ const byte colors[][4] = {
 };
 const int numColors = 8;
 
-
-
-//---------- General  Settings ----------
-char CONFIG_HOSTNAME[32] = "Undefined";
-unsigned int autoRestartIntervalSeconds = 86400; //seconds between forced reboots  (0 - 4,294,967,295 --- max is 49 days on ESP8266)
-unsigned int autoUpdateIntervalSeconds  = 1209600;  //seconds between update checks  (0 - 4,294,967,295 --- max is 49 days on ESP8266)
-bool CONFIG_WIFI_AP_MODE = false;
-char CONFIG_UPDATE_URL[64] = "http://server:80/ota/esp8266-v1.php";
-
-//---------- Network  Settings ----------
-char CONFIG_WIFI_SSID[32] = "wifi_network_ssid";
-char CONFIG_WIFI_PASS[32] = "wifi_password";
-
-//---------- MQTT Settings ----------
-char CONFIG_MQTT_HOST[32] = "192.168.1.2";
-int  CONFIG_MQTT_PORT     = 1883; // Usually 1883
-char CONFIG_MQTT_USER[32] = "couch_lights";
-char CONFIG_MQTT_PASS[32] = "lettherebelight";
-char CONFIG_MQTT_CLIENT_ID[16];
-
-char CONFIG_MQTT_TOPIC_STATE[32] = "devices/lights/device/rgb";
-char CONFIG_MQTT_TOPIC_SET[32]   = "devices/lights/device/set";
-char CONFIG_MQTT_TOPIC_TEMP[32]  = "devices/lights/device/temp";
-char CONFIG_MQTT_TOPIC_WILL[32]  = "devices/lights/device/will";
-
-// ---------- NTP Settings ----------
-char ntpserver[32] = "0.jp.pool.ntp.org";
-int  ntp_interval  = 60; //type sync in minutes
-int  timeZone      = 9; //timezone
-
-
 //  ------------- Transitions Settings -----------------
 static unsigned long lastUpdate = 0;       //last time transition was updated
 static uint8_t transition_step  = 0;        //current step through the current transition
@@ -135,17 +106,10 @@ int loopCount          = 0;
 int stepR, stepG, stepB, stepW;
 int redVal, grnVal, bluVal, whtVal;
 
-//---------- Transition Rates ----------
-byte rainbowRate  = 30;
-byte fadeRate     = 30;
-byte randFadeRate = 30;
-
 //---------- Flash ----------
-int CONFIG_FLASH_LENGTH = 500;
-byte CONFIG_NUM_FLASHS  = 3;
 byte flashCount         = 0;
-
 byte flashBrightness = brightness;
+
 //-------- Standard - Non editable -------
 bool flash      = false;
 bool startFlash = false;

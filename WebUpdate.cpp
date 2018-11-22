@@ -23,7 +23,7 @@ void WebUpdate::buttonTrigger()
   }
 }
 
-byte ICACHE_FLASH_ATTR WebUpdate::iotUpdaterSketch(String url, String firmware)
+byte ICACHE_FLASH_ATTR WebUpdate::iotUpdaterSketch(char* url, char* firmware)
 {
   byte retValue;
 #ifdef DEBUG_UPDATER
@@ -74,7 +74,7 @@ byte ICACHE_FLASH_ATTR WebUpdate::iotUpdaterSketch(String url, String firmware)
   return retValue;
 }
 
-byte ICACHE_FLASH_ATTR WebUpdate::iotUpdaterSPIFFS(String url, String firmware)
+byte ICACHE_FLASH_ATTR WebUpdate::iotUpdaterSPIFFS(char* url, char* firmware)
 {
   byte retValue;
 #ifdef DEBUG_UPDATER

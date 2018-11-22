@@ -1,15 +1,3 @@
-#define DEBUG
-
-#ifdef DEBUG
-  //#define DEBUG_STATE
-  #define DEBUG_MEMORY
-  #define DEBUG_MQTT
-
-  #define ENABLE_MQTT
-  #define ENABLE_TEMPERATURE_SENSOR
-  #define ENABLE_NTP
-#endif
-
 /* This project was based on the esp-mqtt-rgb-led project by Corban Mailloux:
  *  https://github.com/corbanmailloux/esp-mqtt-rgb-led
  */
@@ -21,15 +9,21 @@
     ***   https://github.com/esp8266/Arduino/issues/5023
 */
 
-#ifdef DEBUG_MEMORY
-  uint32_t lastMem = 0;
-  unsigned long lastMemCheck = 0L;
-#endif
+#include <umm_malloc/umm_malloc.h>
+const size_t block_size = 8;
+size_t getTotalAvailableMemory();
+size_t getLargestAvailableBlock();
+inline float getFragmentation();
 
 #include <ESP8266WiFi.h>
 #include <ESP8266TrueRandom.h>
 
 #include "global.h"
+
+#ifdef DEBUG_MEMORY
+  uint32_t lastMem = 0;
+  unsigned long lastMemCheck = 0L;
+#endif
 
 // https://github.com/bblanchon/ArduinoJson
 #include <ArduinoJson.h>
@@ -40,7 +34,7 @@
   
   void mqttCallback(char* topic, byte* payload, unsigned int length);
   
-  bool ENABLE_SEND_STATE = false; 
+  bool ENABLE_SEND_STATE = true; 
 #endif //ENABLE_MQTT
 
 #include "mqtt_esp8266_light.h"
@@ -49,7 +43,7 @@
 #include "WebUpdate.h"
 
 #ifdef ENABLE_NTP
-  #include "Ntp.h"
+  #include "NTP.h"
   NtpClient NTP;
 #endif //ENABLE_NTP
 
@@ -63,10 +57,10 @@
 
 void setup()
 {
-#ifdef DEBUG
+#ifdef ENABLE_DEBUG
   Serial.begin(115200);
 #endif
-
+  
   if (rgb)
   {
     pinMode(CONFIG_PIN_RED, OUTPUT);
@@ -81,17 +75,17 @@ void setup()
     pinMode(CONFIG_PIN_WHITE, OUTPUT);
     digitalWrite(CONFIG_PIN_WHITE, LOW);
   }
-
+  
   //read SPIFF for values
   //if SPIFF file isn't found, use default values
   beginSPIFFS();
   readSPIFFS_Settings();
-
+  
   //start WiFi
   connectNetwork();
   ESPUpdate.begin(&updateMyESP, MODEBUTTON);
 
-
+  
   // Set the BUILTIN_LED based on the CONFIG_BUILTIN_LED_MODE
   switch (CONFIG_BUILTIN_LED_MODE) {
     case 0:
@@ -105,22 +99,23 @@ void setup()
     default: // Other options (like -1) are ignored.
       break;
   }
-
+  
   analogWriteRange(255);
-
+  
 #ifdef ENABLE_MQTT
   // Setup MQTT
-  client.setServer(CONFIG_MQTT_HOST, CONFIG_MQTT_PORT);
+  client.setServer(settings.mqtt.CONFIG_MQTT_HOST, settings.mqtt.CONFIG_MQTT_PORT);
   client.setCallback(mqttCallback);
 #endif //ENABLE_MQTT
-
+  
   current_transition = OFF;
   previous_transition = OFF;
-
+  
 #ifdef ENABLE_NTP
-  NTP.Ntp(ntpserver, timeZone, ntp_interval * 60);
+//  NTP.Ntp(settings.ntp.ntpserver, settings.ntp.timeZone, settings.ntp.ntp_interval * 60);
+  NTP.Ntp(settings.ntp.ntpserver, settings.ntp.timeZone);
 #endif // ENABLE_NTP
-
+  
   beginServerServices();
 }
 
@@ -161,11 +156,11 @@ void mqttCallback(char* topic, byte* payload, unsigned int length)
   payload[length]='\0';
 
 #ifdef DEBUG_MQTT
-  Serial.print("Message arrived [");
-  Serial.print(": ");
+  Serial.print(F("Message arrived ["));
+  Serial.print(F(": "));
   Serial.print(topic);
-  Serial.println("] ");
-  Serial.print("-    ");
+  Serial.println(F("] "));
+  Serial.print(F("-    "));
   Serial.println((char*)payload);
 #endif
 
@@ -205,12 +200,12 @@ void mqttCallback(char* topic, byte* payload, unsigned int length)
   {
     if (root.containsKey(F("flashlength")))
     {
-      CONFIG_FLASH_LENGTH = (int)root[F("flashlength")] * 1000;
+      settings.transitions.CONFIG_FLASH_LENGTH = (int)root[F("flashlength")] * 1000;
     }
 
     if (root.containsKey(F("numflashes")))
     {
-      CONFIG_NUM_FLASHS = (int)root[F("numflashes")];
+      settings.transitions.CONFIG_NUM_FLASHS = (int)root[F("numflashes")];
     }
 
     if (!root.containsKey(F("brightness")))
@@ -403,11 +398,11 @@ void sendState()
   statePacket.printTo(buffer);
 
 #ifdef DEBUG_STATE
-  Serial.print(F("Sending State: "));
-  Serial.println(buffer);
+  //Serial.print(F("Sending State: "));
+  //Serial.println(buffer);
 #endif //DEBUG_STATE
 
-  client.publish(CONFIG_MQTT_TOPIC_STATE, buffer, false);
+  client.publish(settings.mqtt.CONFIG_MQTT_TOPIC_STATE, buffer, false);
 
 #ifdef ENABLE_TEMPERATURE_SENSOR
   if (sendTempStatusToMQTT >= 2) // sent every TEMP_UPDATE_INTERVAL * 2
@@ -418,7 +413,7 @@ void sendState()
     tempState[F("temp")] = temperature;
   
     tempState.printTo(buffer);
-    client.publish(CONFIG_MQTT_TOPIC_TEMP, buffer, false);
+    client.publish(settings.mqtt.CONFIG_MQTT_TOPIC_TEMP, buffer, false);
 
     sendTempStatusToMQTT = 0;
   }
@@ -431,14 +426,22 @@ void ICACHE_FLASH_ATTR reconnect()
   Serial.print(F("Attempting MQTT connection..."));
 #endif
 
+  bool connectedSuccessfully = false;
+  
   // Attempt to connect
-  if (client.connect( CONFIG_MQTT_CLIENT_ID, CONFIG_MQTT_USER, CONFIG_MQTT_PASS, CONFIG_MQTT_TOPIC_WILL, 0, true, "offline" ))
+  if (!settings.mqtt.MQTT_USE_AUTHENTICATION || strlen(settings.mqtt.CONFIG_MQTT_USER) == 0)
+    connectedSuccessfully = client.connect( settings.mqtt.CONFIG_MQTT_CLIENT_ID, settings.mqtt.CONFIG_MQTT_TOPIC_WILL, 0, true, "Offline" );
+  else
+    connectedSuccessfully = client.connect( settings.mqtt.CONFIG_MQTT_CLIENT_ID, settings.mqtt.CONFIG_MQTT_USER, settings.mqtt.CONFIG_MQTT_PASS, settings.mqtt.CONFIG_MQTT_TOPIC_WILL, 0, true, "Offline" );
+  
+  if (connectedSuccessfully)
   {
+    client.subscribe(settings.mqtt.CONFIG_MQTT_TOPIC_SET);
+    client.publish(settings.mqtt.CONFIG_MQTT_TOPIC_WILL, "Online", true);
+    
 #ifdef DEBUG_MQTT
     Serial.println(F("connected"));
 #endif
-
-    client.subscribe(CONFIG_MQTT_TOPIC_SET);
   }
   else
   {
@@ -446,7 +449,7 @@ void ICACHE_FLASH_ATTR reconnect()
     Serial.println(F("failed"));
 #endif
 
-    client.unsubscribe(CONFIG_MQTT_TOPIC_SET);
+    client.unsubscribe(settings.mqtt.CONFIG_MQTT_TOPIC_SET);
     client.disconnect();
   }
 }
@@ -458,6 +461,7 @@ void loop()
   {
     connectNetwork();
   }
+
 #ifdef ENABLE_WEBSOCKET_SERVER
   webSocket.loop();
 #endif //ENABLE_WEBSOCKET_SERVER
@@ -482,7 +486,7 @@ void loop()
   deviceUptimeSec = millis() / 1000;
 #endif
 
-  if (checkForUpdate == true || stateOn == false && autoUpdateIntervalSeconds > 60 && deviceUptimeSec > timesCheckedUpdatesSinceReboot * autoUpdateIntervalSeconds)
+  if (checkForUpdate == true || stateOn == false && settings.ota.autoUpdateIntervalSeconds > 60 && deviceUptimeSec > timesCheckedUpdatesSinceReboot * settings.ota.autoUpdateIntervalSeconds)
   {
     checkForUpdate = false;
     timesCheckedUpdatesSinceReboot++;
@@ -490,7 +494,7 @@ void loop()
   }
 
   //check NTP uptime to see if it's time to reboot the device (only reboot if device if stateOn == false and once only a minute)
-  if (stateOn == false && autoRestartIntervalSeconds > 60 && deviceUptimeSec > autoRestartIntervalSeconds)
+  if (stateOn == false && settings.general.autoRestartIntervalSeconds > 60 && deviceUptimeSec > settings.general.autoRestartIntervalSeconds)
     ESP.restart();
 
 #ifdef ENABLE_TEMPERATURE_SENSOR
@@ -508,7 +512,7 @@ void loop()
     switch (current_transition)
     {
       case SOLID: {
-          //Serial.println("Set Solid Color");
+          //Serial.println(F("Set Solid Color"));
           realRed = map(red, 0, 255, 0, brightness);
           realGreen = map(green, 0, 255, 0, brightness);
           realBlue = map(blue, 0, 255, 0, brightness);
@@ -525,9 +529,9 @@ void loop()
             flashStartTime = millis();
           }
 
-          if (flashCount < CONFIG_NUM_FLASHS)
+          if (flashCount < settings.transitions.CONFIG_NUM_FLASHS)
           {
-            if ((millis() - flashStartTime) % CONFIG_FLASH_LENGTH <= (CONFIG_FLASH_LENGTH / 2))
+            if ((millis() - flashStartTime) % settings.transitions.CONFIG_FLASH_LENGTH <= (settings.transitions.CONFIG_FLASH_LENGTH / 2))
             {
               setColor(flashRed, flashGreen, flashBlue, flashWhite);
             }
@@ -555,7 +559,7 @@ void loop()
           break;
         }
       case FADE: {
-          if (millis() - lastUpdate > fadeRate)
+          if (millis() - lastUpdate > settings.transitions.fadeRate)
           {
             colorFadeEffect(transition_step++);
             lastUpdate = millis();
@@ -563,7 +567,7 @@ void loop()
           break;
         }
       case RANDOM_FADE: {
-          if (millis() - lastUpdate > randFadeRate)
+          if (millis() - lastUpdate > settings.transitions.randFadeRate)
           {
             colorFadeRotateEffect(transition_step++);
             lastUpdate = millis();
@@ -571,7 +575,7 @@ void loop()
           break;
         }
       case RAINBOW: {
-          if (millis() - lastUpdate > rainbowRate)
+          if (millis() - lastUpdate > settings.transitions.rainbowRate)
           {
             rainbowEffect(transition_step++);
             lastUpdate = millis();
@@ -593,6 +597,12 @@ void loop()
   {
        sendState(); //send update to MQTT
        mqtt_lastUpdate = millis();
+
+       Serial.print(getTotalAvailableMemory());
+       Serial.print(' ');
+       Serial.print(getLargestAvailableBlock());
+       Serial.print(' ');
+       Serial.println(getFragmentation());
   }
 #endif
 
@@ -605,7 +615,7 @@ void loop()
 
 #ifdef DEBUG_MEMORY
   uint32_t freeMem = system_get_free_heap_size();
-  if (lastMem != freeMem && ((!stateOn && lastMemCheck - millis() > 10000) || (stateOn && lastMemCheck - millis() > 5000)))
+  if (lastMem != freeMem && ((stateOn && (lastMemCheck - millis() > 10000)) || (!stateOn && (lastMemCheck - millis() > 10000))))
   {
     Serial.print(F("Free Heap: "));
     Serial.println(freeMem);
@@ -715,4 +725,21 @@ void rainbowEffect(uint8_t p_index)
 
     setColor(0, map(green, 0, 255, 0, brightness), map(blue, 0, 255, 0, brightness));
   }
+}
+
+size_t getTotalAvailableMemory()
+{
+  umm_info(0, 0);
+  return ummHeapInfo.freeBlocks * block_size;
+}
+
+size_t getLargestAvailableBlock()
+{
+  umm_info(0, 0);
+  return ummHeapInfo.maxFreeContiguousBlocks * block_size;
+}
+
+inline float getFragmentation()
+{
+  return 100 - getLargestAvailableBlock() * 100.0 / getTotalAvailableMemory();
 }
